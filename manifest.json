@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Time Tracker - Website Time Limiter",
+  "name": "myTime",
   "version": "1.0.0",
-  "description": "Track time spent on websites and set weekly limits with extension requests",
+  "description": "Track your browsing time and set weekly limits for websites with smart blocking and extension requests",
   "permissions": [
     "storage",
     "tabs",
@@ -27,7 +27,7 @@
   ],
   "options_page": "options/options.html",
   "action": {
-    "default_title": "Time Tracker"
+    "default_title": "myTime"
   },
   "icons": {
     "16": "assets/icons/icon16.png",

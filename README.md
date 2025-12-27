@@ -1,10 +1,13 @@
-# Time Tracker - Website Time Limiter Chrome Extension
+# myTime - Smart Website Time Tracker
 
 A Chrome extension that helps you track time spent on websites and set weekly limits with extension requests.
 
 ## Features
 
-- **Time Tracking**: Automatically tracks active time spent on each website domain
+- **Smart Time Tracking**: Automatically tracks active time spent on websites
+  - Excludes Chrome internal pages (chrome://, chrome-extension://, etc.)
+  - Filters out browser-specific pages (edge://, brave://, etc.)
+  - Only tracks actual web content
 - **Weekly Limits**: Set weekly time limits for specific domains
 - **Smart Blocking**: Blocks websites when time limit is exceeded
 - **Extension Requests**: Request additional time with a configurable weekly limit

@@ -1,13 +1,38 @@
 /**
  * Extract domain from a URL
  * @param {string} url - The URL to extract domain from
- * @returns {string|null} - The domain or null if invalid
+ * @returns {string|null} - The domain or null if invalid/excluded
  */
 export function extractDomain(url) {
   try {
     const urlObj = new URL(url);
+
+    // Exclude Chrome internal pages and extension pages
+    const excludedProtocols = [
+      'chrome:',
+      'chrome-extension:',
+      'chrome-devtools:',
+      'about:',
+      'edge:',
+      'brave:',
+      'vivaldi:',
+      'opera:',
+      'file:'
+    ];
+
+    // Check if URL uses an excluded protocol
+    if (excludedProtocols.some(protocol => url.startsWith(protocol))) {
+      return null;
+    }
+
     // Remove www. prefix for consistency
     let hostname = urlObj.hostname.replace(/^www\./, '');
+
+    // Return null for empty or invalid hostnames
+    if (!hostname || hostname.length === 0) {
+      return null;
+    }
+
     return hostname;
   } catch (e) {
     return null;

@@ -46,9 +46,10 @@ Desktop.ini
 .claude/settings.local.json
 .claude/plans/
 
-# Build artifacts (if you add a build process)
+# Build artifacts
 dist/
 build/
+*.zip
 
 # Test coverage
 coverage/

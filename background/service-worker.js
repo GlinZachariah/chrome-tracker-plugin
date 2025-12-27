@@ -45,7 +45,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     chrome.notifications.create('welcome', {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
-      title: 'Time Tracker Installed',
+      title: 'myTime Installed',
       message: 'Open the options page to set up your website time limits.',
       priority: 1
     });
