@@ -76,6 +76,22 @@ function setupEventListeners() {
       loadAllData();
     }
   });
+
+  // Event delegation for dynamically created buttons
+  domainsList.addEventListener('click', (e) => {
+    // Handle Edit button clicks
+    if (e.target.classList.contains('edit-domain-btn')) {
+      const domain = e.target.dataset.domain;
+      const limit = parseFloat(e.target.dataset.limit);
+      openEditModal(domain, limit * 60 * 60 * 1000); // Convert hours to ms
+    }
+
+    // Handle Delete button clicks
+    if (e.target.classList.contains('delete-domain-btn')) {
+      const domain = e.target.dataset.domain;
+      handleDeleteDomain(domain);
+    }
+  });
 }
 
 // ========== Tab Switching ==========
@@ -283,8 +299,8 @@ function renderDomains() {
         </div>
 
         <div class="domain-actions">
-          <button class="btn-small btn-secondary" onclick="window.editDomain('${domain}', ${data.weeklyLimit})">Edit</button>
-          <button class="btn-small btn-danger" onclick="window.deleteDomain('${domain}')">Delete</button>
+          <button class="btn-small btn-secondary edit-domain-btn" data-domain="${domain}" data-limit="${data.weeklyLimit || 0}">Edit</button>
+          <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
         </div>
       </div>
     `;
@@ -492,11 +508,6 @@ function showMessage(message, type = 'info') {
     messageDisplay.style.display = 'none';
   }, 5000);
 }
-
-// ========== Global Functions (for inline onclick) ==========
-
-window.editDomain = openEditModal;
-window.deleteDomain = handleDeleteDomain;
 
 // ========== Initialize on Load ==========
 
