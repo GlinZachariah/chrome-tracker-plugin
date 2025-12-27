@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time Tracker - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-content">
+        <h1>Time Tracker</h1>
+        <p>Manage your website time limits and view statistics</p>
+      </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="tabs">
+      <button class="tab-button active" data-tab="domains">Domains</button>
+      <button class="tab-button" data-tab="statistics">Statistics</button>
+      <button class="tab-button" data-tab="settings">Settings</button>
+    </div>
+
+    <!-- Domains Tab -->
+    <div class="tab-content active" id="domains-tab">
+      <div class="section">
+        <h2>Add New Domain</h2>
+        <form id="add-domain-form" class="add-domain-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="domain-name">Domain:</label>
+              <input type="text" id="domain-name" placeholder="example.com" required>
+            </div>
+            <div class="form-group">
+              <label for="weekly-limit">Weekly Limit (hours):</label>
+              <input type="number" id="weekly-limit" min="0" step="0.5" placeholder="5" required>
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn-primary">Add Domain</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="section">
+        <h2>Tracked Domains</h2>
+        <div id="domains-list" class="domains-list">
+          <p class="empty-state">No domains tracked yet. Add one above!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Tab -->
+    <div class="tab-content" id="statistics-tab">
+      <div class="section">
+        <h2>Weekly Overview</h2>
+        <div id="weekly-stats" class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Time This Week</div>
+            <div class="stat-value" id="total-time-week">0h 0m</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Domains Tracked</div>
+            <div class="stat-value" id="domains-count">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Most Visited</div>
+            <div class="stat-value" id="most-visited">None</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Time by Domain</h2>
+        <div id="domain-stats" class="domain-stats-list">
+          <p class="empty-state">No data available yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div class="tab-content" id="settings-tab">
+      <div class="section">
+        <h2>Global Settings</h2>
+        <form id="settings-form">
+          <div class="form-group">
+            <label for="max-extensions">Max Weekly Extensions per Domain:</label>
+            <input type="number" id="max-extensions" min="0" max="10" value="3">
+            <small>How many time extensions can be requested per domain each week</small>
+          </div>
+
+          <div class="form-group">
+            <label for="default-extension-duration">Default Extension Duration (minutes):</label>
+            <select id="default-extension-duration">
+              <option value="15">15 minutes</option>
+              <option value="30" selected>30 minutes</option>
+              <option value="60">1 hour</option>
+              <option value="120">2 hours</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="week-start-day">Week Starts On:</label>
+            <select id="week-start-day">
+              <option value="0">Sunday</option>
+              <option value="1" selected>Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="idle-threshold">Idle Threshold (seconds):</label>
+            <input type="number" id="idle-threshold" min="30" max="300" value="60">
+            <small>Stop tracking after this many seconds of inactivity</small>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="tracking-enabled" checked>
+              Enable time tracking
+            </label>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="notifications-enabled" checked>
+              Enable notifications
+            </label>
+          </div>
+
+          <button type="submit" class="btn-primary">Save Settings</button>
+        </form>
+      </div>
+
+      <div class="section">
+        <h2>Data Management</h2>
+        <div class="data-management">
+          <button id="export-data-btn" class="btn-secondary">Export Data</button>
+          <button id="import-data-btn" class="btn-secondary">Import Data</button>
+          <button id="weekly-reset-btn" class="btn-secondary">Manual Weekly Reset</button>
+          <button id="reset-all-btn" class="btn-danger">Reset All Data</button>
+        </div>
+        <input type="file" id="import-file-input" accept=".json" style="display:none;">
+      </div>
+    </div>
+
+    <!-- Message Display -->
+    <div id="message-display" class="message-display" style="display:none;"></div>
+  </div>
+
+  <!-- Edit Domain Modal -->
+  <div id="edit-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h2>Edit Domain</h2>
+      <form id="edit-domain-form">
+        <input type="hidden" id="edit-domain-name">
+        <div class="form-group">
+          <label for="edit-weekly-limit">Weekly Limit (hours):</label>
+          <input type="number" id="edit-weekly-limit" min="0" step="0.5" required>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary">Save</button>
+          <button type="button" class="btn-secondary" id="cancel-edit-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Time Tracker - Website Time Limiter",
+  "version": "1.0.0",
+  "description": "Track time spent on websites and set weekly limits with extension requests",
+  "permissions": [
+    "storage",
+    "tabs",
+    "idle",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/blocker.js"],
+      "css": ["content/blocker.css"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "options_page": "options/options.html",
+  "action": {
+    "default_title": "Time Tracker"
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  }
+}

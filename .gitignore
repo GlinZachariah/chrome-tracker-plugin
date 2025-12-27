@@ -1,0 +1,61 @@
+# Chrome Extension specific
+*.pem
+*.crx
+*.zip
+
+# Development files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Node modules (if you add build tools later)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/plans/
+
+# Build artifacts (if you add a build process)
+dist/
+build/
+
+# Test coverage
+coverage/
+
+# Chrome extension temp files
+_metadata/
+
+# Backup files
+*.bak
+*.backup
