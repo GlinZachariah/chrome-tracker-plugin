@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
 // Default settings
 export const DEFAULT_SETTINGS = {
   maxWeeklyExtensions: 3,
+  maxDailyExtensions: 3,
   defaultExtensionDuration: 30 * 60 * 1000, // 30 minutes in ms
   weekStartDay: 1, // Monday (0 = Sunday, 1 = Monday, etc.)
   idleThreshold: 60 * 1000, // 60 seconds in ms
@@ -21,15 +22,20 @@ export const DEFAULT_SETTINGS = {
 export const DEFAULT_DOMAIN_DATA = {
   totalTime: 0,
   weeklyTime: 0,
+  dailyTime: 0,
   lastUpdated: 0,
+  lastDayReset: 0,
   weeklyLimit: null,
+  dailyLimit: null,
   isBlocked: false
 };
 
 // Default extension data structure
 export const DEFAULT_EXTENSION_DATA = {
   weeklyRequests: [],
-  currentExtension: null
+  dailyRequests: [],
+  currentExtension: null,
+  lastDayReset: 0
 };
 
 // Time constants

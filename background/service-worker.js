@@ -146,15 +146,25 @@ async function handleExtensionRequest(data) {
     return { success: false, error: 'Missing required fields' };
   }
 
-  // Check weekly extension count
   const settings = await storageManager.getSettings();
-  const weeklyCount = await storageManager.getWeeklyExtensionCount(domain);
 
+  // Check daily extension count first (more restrictive)
+  const dailyCount = await storageManager.getDailyExtensionCount(domain);
+  if (dailyCount >= settings.maxDailyExtensions) {
+    return {
+      success: false,
+      error: 'daily_limit_reached',
+      message: `You've used all ${settings.maxDailyExtensions} extensions for today. Try again tomorrow.`
+    };
+  }
+
+  // Check weekly extension count
+  const weeklyCount = await storageManager.getWeeklyExtensionCount(domain);
   if (weeklyCount >= settings.maxWeeklyExtensions) {
     return {
       success: false,
       error: 'weekly_limit_reached',
-      message: `You've used all ${settings.maxWeeklyExtensions} extensions for this week.`
+      message: `You've used all ${settings.maxWeeklyExtensions} extensions for this week. Try again next week.`
     };
   }
 
@@ -191,7 +201,8 @@ async function handleExtensionRequest(data) {
   return {
     success: true,
     extension,
-    remainingExtensions: settings.maxWeeklyExtensions - weeklyCount - 1
+    remainingDailyExtensions: settings.maxDailyExtensions - dailyCount - 1,
+    remainingWeeklyExtensions: settings.maxWeeklyExtensions - weeklyCount - 1
   };
 }
 
@@ -218,13 +229,15 @@ async function handleGetDomainInfo(data) {
   const extensionData = await storageManager.getDomainExtensions(domain);
   const activeExtension = await storageManager.getActiveExtension(domain);
   const settings = await storageManager.getSettings();
+  const dailyCount = await storageManager.getDailyExtensionCount(domain);
 
   return {
     success: true,
     domain: domainData,
     extensions: extensionData,
     activeExtension,
-    remainingExtensions: settings.maxWeeklyExtensions - extensionData.weeklyRequests.length
+    remainingDailyExtensions: settings.maxDailyExtensions - dailyCount,
+    remainingWeeklyExtensions: settings.maxWeeklyExtensions - extensionData.weeklyRequests.length
   };
 }
 
@@ -246,14 +259,14 @@ async function handleGetAllDomains() {
  * Add new domain
  */
 async function handleAddDomain(data) {
-  const { domain, weeklyLimit } = data;
+  const { domain, dailyLimit, weeklyLimit } = data;
 
   if (!isValidDomain(domain)) {
     return { success: false, error: 'Invalid domain name' };
   }
 
   try {
-    const domainData = await storageManager.addDomain(domain, weeklyLimit);
+    const domainData = await storageManager.addDomain(domain, dailyLimit, weeklyLimit);
     return { success: true, domain: domainData };
   } catch (error) {
     return { success: false, error: error.message };

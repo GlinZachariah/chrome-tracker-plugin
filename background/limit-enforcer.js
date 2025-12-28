@@ -28,8 +28,8 @@ class LimitEnforcer {
     try {
       const domainData = await storageManager.getDomain(domain);
 
-      // If domain not tracked or no limit set, not blocked
-      if (!domainData || !domainData.weeklyLimit) {
+      // If domain not tracked or no limits set, not blocked
+      if (!domainData || (!domainData.weeklyLimit && !domainData.dailyLimit)) {
         return {
           blocked: false,
           reason: null,
@@ -53,24 +53,52 @@ class LimitEnforcer {
         await storageManager.clearCurrentExtension(domain);
       }
 
-      // Check if limit exceeded
-      if (domainData.weeklyTime >= domainData.weeklyLimit) {
+      // Check daily limit first (more restrictive)
+      if (domainData.dailyLimit && domainData.dailyTime >= domainData.dailyLimit) {
         return {
           blocked: true,
-          reason: 'limit_exceeded',
+          reason: 'daily_limit_exceeded',
+          limitType: 'daily',
           domainData: domainData
         };
       }
 
-      // Check if approaching limit (90%)
-      const percentage = (domainData.weeklyTime / domainData.weeklyLimit) * 100;
-      if (percentage >= 90 && percentage < 100) {
+      // Check weekly limit
+      if (domainData.weeklyLimit && domainData.weeklyTime >= domainData.weeklyLimit) {
         return {
-          blocked: false,
-          reason: 'approaching_limit',
-          percentage: percentage,
+          blocked: true,
+          reason: 'weekly_limit_exceeded',
+          limitType: 'weekly',
           domainData: domainData
         };
+      }
+
+      // Check if approaching daily limit (90%)
+      if (domainData.dailyLimit) {
+        const dailyPercentage = (domainData.dailyTime / domainData.dailyLimit) * 100;
+        if (dailyPercentage >= 90 && dailyPercentage < 100) {
+          return {
+            blocked: false,
+            reason: 'approaching_daily_limit',
+            limitType: 'daily',
+            percentage: dailyPercentage,
+            domainData: domainData
+          };
+        }
+      }
+
+      // Check if approaching weekly limit (90%)
+      if (domainData.weeklyLimit) {
+        const weeklyPercentage = (domainData.weeklyTime / domainData.weeklyLimit) * 100;
+        if (weeklyPercentage >= 90 && weeklyPercentage < 100) {
+          return {
+            blocked: false,
+            reason: 'approaching_weekly_limit',
+            limitType: 'weekly',
+            percentage: weeklyPercentage,
+            domainData: domainData
+          };
+        }
       }
 
       return {

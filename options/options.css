@@ -256,6 +256,37 @@ body {
   text-transform: uppercase;
 }
 
+.unlimited-badge {
+  background: #27ae60;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.domain-card.unlimited {
+  border-color: #27ae60;
+  background: #e8f8f0;
+}
+
+.section-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 25px 0 15px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.form-hint {
+  font-size: 13px;
+  color: #666;
+  margin-top: 10px;
+  font-style: italic;
+}
+
 .domain-info {
   margin-bottom: 15px;
 }

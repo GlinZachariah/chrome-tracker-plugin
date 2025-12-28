@@ -152,6 +152,29 @@ export function isNewWeek(week1, week2) {
 }
 
 /**
+ * Get the start of today (midnight)
+ * @returns {number} - Timestamp of today at midnight
+ */
+export function getTodayStart() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+/**
+ * Check if a timestamp is from a different day than today
+ * @param {number} timestamp - Timestamp to check
+ * @returns {boolean} - True if different day
+ */
+export function isNewDay(timestamp) {
+  if (!timestamp) return true;
+  const lastDay = new Date(timestamp);
+  lastDay.setHours(0, 0, 0, 0);
+  const today = getTodayStart();
+  return lastDay.getTime() !== today;
+}
+
+/**
  * Calculate percentage
  * @param {number} value - Current value
  * @param {number} total - Total value

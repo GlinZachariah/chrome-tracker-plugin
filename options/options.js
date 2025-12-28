@@ -82,8 +82,9 @@ function setupEventListeners() {
     // Handle Edit button clicks
     if (e.target.classList.contains('edit-domain-btn')) {
       const domain = e.target.dataset.domain;
-      const limit = parseFloat(e.target.dataset.limit);
-      openEditModal(domain, limit * 60 * 60 * 1000); // Convert hours to ms
+      const dailyLimit = e.target.dataset.dailyLimit ? parseFloat(e.target.dataset.dailyLimit) * 60 * 60 * 1000 : null;
+      const weeklyLimit = e.target.dataset.weeklyLimit ? parseFloat(e.target.dataset.weeklyLimit) * 60 * 60 * 1000 : null;
+      openEditModal(domain, dailyLimit, weeklyLimit);
     }
 
     // Handle Delete button clicks
@@ -162,19 +163,37 @@ async function handleAddDomain(e) {
   e.preventDefault();
 
   const domainName = document.getElementById('domain-name').value.trim().toLowerCase();
-  const weeklyLimitHours = parseFloat(document.getElementById('weekly-limit').value);
+  const dailyLimitInput = document.getElementById('daily-limit').value;
+  const weeklyLimitInput = document.getElementById('weekly-limit').value;
 
   if (!isValidDomain(domainName)) {
     showMessage('Please enter a valid domain name (e.g., example.com)', 'error');
     return;
   }
 
-  const weeklyLimit = parseTimeToMs(weeklyLimitHours, 'hours');
+  // Parse limits (empty values become null for no limit)
+  const dailyLimitHours = dailyLimitInput ? parseFloat(dailyLimitInput) : null;
+  const weeklyLimitHours = weeklyLimitInput ? parseFloat(weeklyLimitInput) : null;
+
+  // Validate: if both are set, weekly must be >= daily
+  if (dailyLimitHours !== null && weeklyLimitHours !== null && weeklyLimitHours < dailyLimitHours) {
+    showMessage('Weekly limit must be greater than or equal to daily limit', 'error');
+    return;
+  }
+
+  // Require at least one limit to be set
+  if (dailyLimitHours === null && weeklyLimitHours === null) {
+    showMessage('Please set at least one limit (daily or weekly)', 'error');
+    return;
+  }
+
+  const dailyLimit = dailyLimitHours !== null ? parseTimeToMs(dailyLimitHours, 'hours') : null;
+  const weeklyLimit = weeklyLimitHours !== null ? parseTimeToMs(weeklyLimitHours, 'hours') : null;
 
   try {
     const response = await chrome.runtime.sendMessage({
       action: MESSAGE_TYPES.ADD_DOMAIN,
-      data: { domain: domainName, weeklyLimit }
+      data: { domain: domainName, dailyLimit, weeklyLimit }
     });
 
     if (response.success) {
@@ -213,9 +232,10 @@ async function handleDeleteDomain(domain) {
   }
 }
 
-function openEditModal(domain, currentLimitMs) {
+function openEditModal(domain, currentDailyLimitMs, currentWeeklyLimitMs) {
   document.getElementById('edit-domain-name').value = domain;
-  document.getElementById('edit-weekly-limit').value = currentLimitMs ? (currentLimitMs / (60 * 60 * 1000)).toFixed(1) : 0;
+  document.getElementById('edit-daily-limit').value = currentDailyLimitMs ? (currentDailyLimitMs / (60 * 60 * 1000)).toFixed(1) : '';
+  document.getElementById('edit-weekly-limit').value = currentWeeklyLimitMs ? (currentWeeklyLimitMs / (60 * 60 * 1000)).toFixed(1) : '';
   editModal.style.display = 'flex';
 }
 
@@ -227,13 +247,32 @@ async function handleEditDomain(e) {
   e.preventDefault();
 
   const domain = document.getElementById('edit-domain-name').value;
-  const weeklyLimitHours = parseFloat(document.getElementById('edit-weekly-limit').value);
-  const weeklyLimit = parseTimeToMs(weeklyLimitHours, 'hours');
+  const dailyLimitInput = document.getElementById('edit-daily-limit').value;
+  const weeklyLimitInput = document.getElementById('edit-weekly-limit').value;
+
+  // Parse limits (empty values become null for no limit)
+  const dailyLimitHours = dailyLimitInput ? parseFloat(dailyLimitInput) : null;
+  const weeklyLimitHours = weeklyLimitInput ? parseFloat(weeklyLimitInput) : null;
+
+  // Validate: if both are set, weekly must be >= daily
+  if (dailyLimitHours !== null && weeklyLimitHours !== null && weeklyLimitHours < dailyLimitHours) {
+    showMessage('Weekly limit must be greater than or equal to daily limit', 'error');
+    return;
+  }
+
+  // Require at least one limit to be set
+  if (dailyLimitHours === null && weeklyLimitHours === null) {
+    showMessage('Please set at least one limit (daily or weekly)', 'error');
+    return;
+  }
+
+  const dailyLimit = dailyLimitHours !== null ? parseTimeToMs(dailyLimitHours, 'hours') : null;
+  const weeklyLimit = weeklyLimitHours !== null ? parseTimeToMs(weeklyLimitHours, 'hours') : null;
 
   try {
     const response = await chrome.runtime.sendMessage({
       action: MESSAGE_TYPES.UPDATE_DOMAIN,
-      data: { domain, updates: { weeklyLimit } }
+      data: { domain, updates: { dailyLimit, weeklyLimit } }
     });
 
     if (response.success) {
@@ -259,52 +298,122 @@ function renderDomains() {
     return;
   }
 
+  // Separate domains with limits from unlimited domains
+  const limitedDomains = domainsArray.filter(([, data]) => data.dailyLimit || data.weeklyLimit);
+  const unlimitedDomains = domainsArray.filter(([, data]) => !data.dailyLimit && !data.weeklyLimit);
+
   // Sort by weekly time (descending)
-  domainsArray.sort((a, b) => b[1].weeklyTime - a[1].weeklyTime);
+  limitedDomains.sort((a, b) => b[1].weeklyTime - a[1].weeklyTime);
+  unlimitedDomains.sort((a, b) => b[1].weeklyTime - a[1].weeklyTime);
 
-  domainsList.innerHTML = domainsArray.map(([domain, data]) => {
-    const extensionData = currentExtensions[domain] || { weeklyRequests: [], currentExtension: null };
-    const percentage = data.weeklyLimit ? calculatePercentage(data.weeklyTime, data.weeklyLimit) : 0;
-    const isBlocked = data.isBlocked;
+  let html = '';
 
-    return `
-      <div class="domain-card ${isBlocked ? 'blocked' : ''}">
-        <div class="domain-header">
-          <h3>${domain}</h3>
-          ${isBlocked ? '<span class="blocked-badge">BLOCKED</span>' : ''}
-        </div>
+  // Render limited domains section
+  if (limitedDomains.length > 0) {
+    html += '<h3 class="section-header">Domains with Limits</h3>';
+    html += limitedDomains.map(([domain, data]) => {
+      const extensionData = currentExtensions[domain] || { weeklyRequests: [], dailyRequests: [], currentExtension: null };
+      const dailyPercentage = data.dailyLimit ? calculatePercentage(data.dailyTime, data.dailyLimit) : 0;
+      const weeklyPercentage = data.weeklyLimit ? calculatePercentage(data.weeklyTime, data.weeklyLimit) : 0;
+      const isBlocked = data.isBlocked;
 
-        <div class="domain-info">
-          <div class="info-row">
-            <span>This week:</span>
-            <strong>${formatTime(data.weeklyTime)} / ${data.weeklyLimit ? formatTime(data.weeklyLimit) : 'No limit'}</strong>
+      return `
+        <div class="domain-card ${isBlocked ? 'blocked' : ''}">
+          <div class="domain-header">
+            <h3>${domain}</h3>
+            ${isBlocked ? '<span class="blocked-badge">BLOCKED</span>' : ''}
           </div>
-          ${data.weeklyLimit ? `
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: ${percentage}%"></div>
+
+          <div class="domain-info">
+            ${data.dailyLimit ? `
+              <div class="info-row">
+                <span>Today:</span>
+                <strong>${formatTime(data.dailyTime)} / ${formatTime(data.dailyLimit)}</strong>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${dailyPercentage}%"></div>
+              </div>
+              <div class="info-row">
+                <span>Daily usage:</span>
+                <strong>${dailyPercentage}%</strong>
+              </div>
+            ` : ''}
+
+            ${data.weeklyLimit ? `
+              <div class="info-row">
+                <span>This week:</span>
+                <strong>${formatTime(data.weeklyTime)} / ${formatTime(data.weeklyLimit)}</strong>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${weeklyPercentage}%"></div>
+              </div>
+              <div class="info-row">
+                <span>Weekly usage:</span>
+                <strong>${weeklyPercentage}%</strong>
+              </div>
+            ` : ''}
+
+            <div class="info-row">
+              <span>Total time:</span>
+              <strong>${formatTime(data.totalTime)}</strong>
             </div>
             <div class="info-row">
-              <span>Usage:</span>
-              <strong>${percentage}%</strong>
+              <span>Extensions used:</span>
+              <strong>${extensionData.dailyRequests.length} / ${currentSettings.maxDailyExtensions || 3} daily, ${extensionData.weeklyRequests.length} / ${currentSettings.maxWeeklyExtensions || 3} weekly</strong>
             </div>
-          ` : ''}
-          <div class="info-row">
-            <span>Total time:</span>
-            <strong>${formatTime(data.totalTime)}</strong>
           </div>
-          <div class="info-row">
-            <span>Extensions used:</span>
-            <strong>${extensionData.weeklyRequests.length} / ${currentSettings.maxWeeklyExtensions || 3}</strong>
-          </div>
-        </div>
 
-        <div class="domain-actions">
-          <button class="btn-small btn-secondary edit-domain-btn" data-domain="${domain}" data-limit="${data.weeklyLimit || 0}">Edit</button>
-          <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
+          <div class="domain-actions">
+            <button class="btn-small btn-secondary edit-domain-btn"
+              data-domain="${domain}"
+              data-daily-limit="${data.dailyLimit ? (data.dailyLimit / (60 * 60 * 1000)).toFixed(1) : ''}"
+              data-weekly-limit="${data.weeklyLimit ? (data.weeklyLimit / (60 * 60 * 1000)).toFixed(1) : ''}">Edit</button>
+            <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
+          </div>
         </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  }
+
+  // Render unlimited domains section
+  if (unlimitedDomains.length > 0) {
+    html += '<h3 class="section-header">Domains without Limits</h3>';
+    html += unlimitedDomains.map(([domain, data]) => {
+      return `
+        <div class="domain-card unlimited">
+          <div class="domain-header">
+            <h3>${domain}</h3>
+            <span class="unlimited-badge">UNLIMITED</span>
+          </div>
+
+          <div class="domain-info">
+            <div class="info-row">
+              <span>Today:</span>
+              <strong>${formatTime(data.dailyTime)}</strong>
+            </div>
+            <div class="info-row">
+              <span>This week:</span>
+              <strong>${formatTime(data.weeklyTime)}</strong>
+            </div>
+            <div class="info-row">
+              <span>Total time:</span>
+              <strong>${formatTime(data.totalTime)}</strong>
+            </div>
+          </div>
+
+          <div class="domain-actions">
+            <button class="btn-small btn-secondary edit-domain-btn"
+              data-domain="${domain}"
+              data-daily-limit=""
+              data-weekly-limit="">Edit</button>
+            <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  domainsList.innerHTML = html;
 }
 
 function renderStatistics() {
@@ -358,6 +467,7 @@ function renderStatistics() {
 // ========== Settings ==========
 
 function populateSettingsForm() {
+  document.getElementById('max-daily-extensions').value = currentSettings.maxDailyExtensions || 3;
   document.getElementById('max-extensions').value = currentSettings.maxWeeklyExtensions || 3;
   document.getElementById('default-extension-duration').value = (currentSettings.defaultExtensionDuration / 60000) || 30;
   document.getElementById('week-start-day').value = currentSettings.weekStartDay || 1;
@@ -370,6 +480,7 @@ async function handleSaveSettings(e) {
   e.preventDefault();
 
   const settings = {
+    maxDailyExtensions: parseInt(document.getElementById('max-daily-extensions').value),
     maxWeeklyExtensions: parseInt(document.getElementById('max-extensions').value),
     defaultExtensionDuration: parseInt(document.getElementById('default-extension-duration').value) * 60000,
     weekStartDay: parseInt(document.getElementById('week-start-day').value),

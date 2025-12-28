@@ -33,13 +33,20 @@
               <input type="text" id="domain-name" placeholder="example.com" required>
             </div>
             <div class="form-group">
+              <label for="daily-limit">Daily Limit (hours):</label>
+              <input type="number" id="daily-limit" min="0" step="0.5" placeholder="Optional">
+              <small>Optional - leave empty for no daily limit</small>
+            </div>
+            <div class="form-group">
               <label for="weekly-limit">Weekly Limit (hours):</label>
-              <input type="number" id="weekly-limit" min="0" step="0.5" placeholder="5" required>
+              <input type="number" id="weekly-limit" min="0" step="0.5" placeholder="Optional">
+              <small>Optional - leave empty for no weekly limit</small>
             </div>
             <div class="form-group">
               <button type="submit" class="btn-primary">Add Domain</button>
             </div>
           </div>
+          <p class="form-hint">Note: If both limits are set, weekly limit must be greater than or equal to daily limit.</p>
         </form>
       </div>
 
@@ -84,6 +91,12 @@
       <div class="section">
         <h2>Global Settings</h2>
         <form id="settings-form">
+          <div class="form-group">
+            <label for="max-daily-extensions">Max Daily Extensions per Domain:</label>
+            <input type="number" id="max-daily-extensions" min="0" max="10" value="3">
+            <small>How many time extensions can be requested per domain each day</small>
+          </div>
+
           <div class="form-group">
             <label for="max-extensions">Max Weekly Extensions per Domain:</label>
             <input type="number" id="max-extensions" min="0" max="10" value="3">
@@ -160,9 +173,16 @@
       <form id="edit-domain-form">
         <input type="hidden" id="edit-domain-name">
         <div class="form-group">
-          <label for="edit-weekly-limit">Weekly Limit (hours):</label>
-          <input type="number" id="edit-weekly-limit" min="0" step="0.5" required>
+          <label for="edit-daily-limit">Daily Limit (hours):</label>
+          <input type="number" id="edit-daily-limit" min="0" step="0.5" placeholder="No daily limit">
+          <small>Leave empty for no daily limit</small>
         </div>
+        <div class="form-group">
+          <label for="edit-weekly-limit">Weekly Limit (hours):</label>
+          <input type="number" id="edit-weekly-limit" min="0" step="0.5" placeholder="No weekly limit">
+          <small>Leave empty for no weekly limit</small>
+        </div>
+        <p class="form-hint">Note: If both limits are set, weekly limit must be greater than or equal to daily limit.</p>
         <div class="modal-actions">
           <button type="submit" class="btn-primary">Save</button>
           <button type="button" class="btn-secondary" id="cancel-edit-btn">Cancel</button>

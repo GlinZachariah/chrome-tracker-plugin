@@ -75,9 +75,21 @@
     overlay.className = 'time-tracker-blocker-overlay';
 
     const domain = getCurrentDomain();
+    const dailyTime = domainInfo.domain?.dailyTime || 0;
+    const dailyLimit = domainInfo.domain?.dailyLimit || 0;
     const weeklyTime = domainInfo.domain?.weeklyTime || 0;
     const weeklyLimit = domainInfo.domain?.weeklyLimit || 0;
-    const remainingExtensions = domainInfo.remainingExtensions || 0;
+    const remainingDailyExtensions = domainInfo.remainingDailyExtensions || 0;
+    const remainingWeeklyExtensions = domainInfo.remainingWeeklyExtensions || 0;
+
+    // Determine which limit was exceeded
+    let limitType = 'weekly';
+    let limitMessage = `You've reached your weekly time limit for <strong>${domain}</strong>`;
+
+    if (dailyLimit && dailyTime >= dailyLimit) {
+      limitType = 'daily';
+      limitMessage = `You've reached your daily time limit for <strong>${domain}</strong>`;
+    }
 
     overlay.innerHTML = `
       <div class="time-tracker-blocker-content">
@@ -88,32 +100,36 @@
           </svg>
         </div>
 
-        <h1 class="time-tracker-blocker-title">Time Limit Reached</h1>
+        <h1 class="time-tracker-blocker-title">${limitType === 'daily' ? 'Daily' : 'Weekly'} Limit Reached</h1>
 
         <p class="time-tracker-blocker-message">
-          You've reached your weekly time limit for <strong>${domain}</strong>
+          ${limitMessage}
         </p>
 
         <div class="time-tracker-blocker-stats">
+          ${dailyLimit ? `
           <div class="stat-item">
-            <div class="stat-label">Time Used This Week</div>
-            <div class="stat-value">${formatTime(weeklyTime)}</div>
+            <div class="stat-label">Today</div>
+            <div class="stat-value">${formatTime(dailyTime)} / ${formatTime(dailyLimit)}</div>
           </div>
+          ` : ''}
+          ${weeklyLimit ? `
           <div class="stat-item">
-            <div class="stat-label">Weekly Limit</div>
-            <div class="stat-value">${formatTime(weeklyLimit)}</div>
+            <div class="stat-label">This Week</div>
+            <div class="stat-value">${formatTime(weeklyTime)} / ${formatTime(weeklyLimit)}</div>
           </div>
+          ` : ''}
           <div class="stat-item">
-            <div class="stat-label">Extensions Remaining</div>
-            <div class="stat-value">${remainingExtensions}</div>
+            <div class="stat-label">Extensions Left</div>
+            <div class="stat-value">${remainingDailyExtensions} today / ${remainingWeeklyExtensions} week</div>
           </div>
         </div>
 
         <div class="time-tracker-blocker-extension">
           <h2>Request Extension</h2>
-          <p>You have <strong>${remainingExtensions}</strong> extension${remainingExtensions !== 1 ? 's' : ''} remaining this week.</p>
+          <p>You have <strong>${remainingDailyExtensions}</strong> extension${remainingDailyExtensions !== 1 ? 's' : ''} left today and <strong>${remainingWeeklyExtensions}</strong> left this week.</p>
 
-          <form id="extension-request-form" ${remainingExtensions === 0 ? 'style="display:none;"' : ''}>
+          <form id="extension-request-form" ${(remainingDailyExtensions === 0 || remainingWeeklyExtensions === 0) ? 'style="display:none;"' : ''}>
             <div class="form-group">
               <label for="extension-duration">Duration:</label>
               <select id="extension-duration" required>
@@ -134,7 +150,7 @@
 
           <div id="extension-message" class="extension-message" style="display:none;"></div>
 
-          ${remainingExtensions === 0 ? '<p class="no-extensions-message">You\'ve used all your extensions for this week. Try again next week!</p>' : ''}
+          ${(remainingDailyExtensions === 0 || remainingWeeklyExtensions === 0) ? `<p class="no-extensions-message">${remainingDailyExtensions === 0 && remainingWeeklyExtensions === 0 ? 'You\'ve used all your extensions for today and this week.' : remainingDailyExtensions === 0 ? 'You\'ve used all your daily extensions. Try again tomorrow!' : 'You\'ve used all your weekly extensions. Try again next week!'}</p>` : ''}
         </div>
 
         <div class="time-tracker-blocker-footer">

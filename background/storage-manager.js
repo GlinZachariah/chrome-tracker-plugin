@@ -4,7 +4,7 @@ import {
   DEFAULT_DOMAIN_DATA,
   DEFAULT_EXTENSION_DATA
 } from '../shared/constants.js';
-import { deepClone, getCurrentWeekInfo, isNewWeek } from '../shared/utils.js';
+import { deepClone, getCurrentWeekInfo, isNewWeek, isNewDay, getTodayStart } from '../shared/utils.js';
 
 /**
  * Storage Manager - Handles all chrome.storage.local operations
@@ -86,7 +86,7 @@ class StorageManager {
     return domains[domain] || null;
   }
 
-  async addDomain(domain, weeklyLimit = null) {
+  async addDomain(domain, dailyLimit = null, weeklyLimit = null) {
     const domains = await this.getAllDomains();
 
     if (domains[domain]) {
@@ -95,6 +95,7 @@ class StorageManager {
 
     domains[domain] = {
       ...deepClone(DEFAULT_DOMAIN_DATA),
+      dailyLimit: dailyLimit,
       weeklyLimit: weeklyLimit,
       lastUpdated: Date.now()
     };
@@ -139,8 +140,15 @@ class StorageManager {
       domains[domain] = deepClone(DEFAULT_DOMAIN_DATA);
     }
 
+    // Check for daily reset
+    if (isNewDay(domains[domain].lastDayReset)) {
+      domains[domain].dailyTime = 0;
+      domains[domain].lastDayReset = getTodayStart();
+    }
+
     domains[domain].totalTime += milliseconds;
     domains[domain].weeklyTime += milliseconds;
+    domains[domain].dailyTime += milliseconds;
     domains[domain].lastUpdated = Date.now();
 
     await chrome.storage.local.set({ [STORAGE_KEYS.DOMAINS]: domains });
@@ -170,12 +178,21 @@ class StorageManager {
       extensions[domain] = deepClone(DEFAULT_EXTENSION_DATA);
     }
 
-    // Add to weekly requests
-    extensions[domain].weeklyRequests.push({
+    // Check for daily reset
+    if (isNewDay(extensions[domain].lastDayReset)) {
+      extensions[domain].dailyRequests = [];
+      extensions[domain].lastDayReset = getTodayStart();
+    }
+
+    const requestData = {
       timestamp: Date.now(),
       duration: request.duration,
       reason: request.reason
-    });
+    };
+
+    // Add to both weekly and daily requests
+    extensions[domain].weeklyRequests.push(requestData);
+    extensions[domain].dailyRequests.push(requestData);
 
     // Set as current extension
     extensions[domain].currentExtension = {
@@ -214,6 +231,17 @@ class StorageManager {
     return extensions.weeklyRequests.length;
   }
 
+  async getDailyExtensionCount(domain) {
+    const extensions = await this.getDomainExtensions(domain);
+
+    // Check for daily reset
+    if (isNewDay(extensions.lastDayReset)) {
+      return 0;
+    }
+
+    return extensions.dailyRequests.length;
+  }
+
   // ========== Week Management ==========
 
   async getCurrentWeek() {
@@ -243,8 +271,11 @@ class StorageManager {
 
     // Reset all domains
     const domains = await this.getAllDomains();
+    const todayStart = getTodayStart();
     for (const domain in domains) {
       domains[domain].weeklyTime = 0;
+      domains[domain].dailyTime = 0;
+      domains[domain].lastDayReset = todayStart;
       domains[domain].isBlocked = false;
     }
     await chrome.storage.local.set({ [STORAGE_KEYS.DOMAINS]: domains });
