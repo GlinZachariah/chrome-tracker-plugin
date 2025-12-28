@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "myTime",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Track your browsing time and set daily/weekly limits for websites with smart blocking, extension requests, and domain exclusions",
   "permissions": [
     "storage",
