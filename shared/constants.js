@@ -4,7 +4,8 @@ export const STORAGE_KEYS = {
   EXTENSIONS: 'extensions',
   SETTINGS: 'settings',
   CURRENT_WEEK: 'currentWeek',
-  ACTIVE_SESSION: 'activeSession'
+  ACTIVE_SESSION: 'activeSession',
+  EXCLUDED_DOMAINS: 'excludedDomains'
 };
 
 // Default settings
@@ -71,7 +72,10 @@ export const MESSAGE_TYPES = {
   EXPORT_DATA: 'exportData',
   IMPORT_DATA: 'importData',
   RESET_DATA: 'resetData',
-  MANUAL_WEEKLY_RESET: 'manualWeeklyReset'
+  MANUAL_WEEKLY_RESET: 'manualWeeklyReset',
+  GET_EXCLUDED_DOMAINS: 'getExcludedDomains',
+  ADD_EXCLUDED_DOMAIN: 'addExcludedDomain',
+  REMOVE_EXCLUDED_DOMAIN: 'removeExcludedDomain'
 };
 
 // Notification IDs

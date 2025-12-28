@@ -130,6 +130,16 @@ async function handleMessage(message, sender) {
     case MESSAGE_TYPES.MANUAL_WEEKLY_RESET:
       return await handleManualWeeklyReset();
 
+    // ========== Excluded Domains ==========
+    case MESSAGE_TYPES.GET_EXCLUDED_DOMAINS:
+      return await handleGetExcludedDomains();
+
+    case MESSAGE_TYPES.ADD_EXCLUDED_DOMAIN:
+      return await handleAddExcludedDomain(message.data);
+
+    case MESSAGE_TYPES.REMOVE_EXCLUDED_DOMAIN:
+      return await handleRemoveExcludedDomain(message.data);
+
     default:
       throw new Error(`Unknown action: ${message.action}`);
   }
@@ -359,6 +369,46 @@ async function handleManualWeeklyReset() {
   await storageManager.performWeeklyReset(weekInfo);
 
   return { success: true };
+}
+
+/**
+ * Get excluded domains
+ */
+async function handleGetExcludedDomains() {
+  const excludedDomains = await storageManager.getExcludedDomains();
+  return { success: true, excludedDomains };
+}
+
+/**
+ * Add excluded domain
+ */
+async function handleAddExcludedDomain(data) {
+  const { domain } = data;
+
+  if (!domain) {
+    return { success: false, error: 'Domain is required' };
+  }
+
+  try {
+    const excludedDomains = await storageManager.addExcludedDomain(domain);
+    return { success: true, excludedDomains };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Remove excluded domain
+ */
+async function handleRemoveExcludedDomain(data) {
+  const { domain } = data;
+
+  if (!domain) {
+    return { success: false, error: 'Domain is required' };
+  }
+
+  const excludedDomains = await storageManager.removeExcludedDomain(domain);
+  return { success: true, excludedDomains };
 }
 
 /**

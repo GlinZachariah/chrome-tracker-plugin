@@ -10,6 +10,8 @@ const tabContents = document.querySelectorAll('.tab-content');
 // Domains tab
 const addDomainForm = document.getElementById('add-domain-form');
 const domainsList = document.getElementById('domains-list');
+const addExcludedDomainForm = document.getElementById('add-excluded-domain-form');
+const excludedDomainsList = document.getElementById('excluded-domains-list');
 
 // Statistics tab
 const totalTimeWeek = document.getElementById('total-time-week');
@@ -37,6 +39,7 @@ const messageDisplay = document.getElementById('message-display');
 let currentDomains = {};
 let currentExtensions = {};
 let currentSettings = {};
+let excludedDomains = [];
 
 // ========== Initialization ==========
 
@@ -55,6 +58,9 @@ function setupEventListeners() {
 
   // Add domain form
   addDomainForm.addEventListener('submit', handleAddDomain);
+
+  // Add excluded domain form
+  addExcludedDomainForm.addEventListener('submit', handleAddExcludedDomain);
 
   // Settings form
   settingsForm.addEventListener('submit', handleSaveSettings);
@@ -93,6 +99,14 @@ function setupEventListeners() {
       handleDeleteDomain(domain);
     }
   });
+
+  // Event delegation for excluded domains
+  excludedDomainsList.addEventListener('click', (e) => {
+    if (e.target.classList.contains('remove-excluded-btn')) {
+      const domain = e.target.dataset.domain;
+      handleRemoveExcludedDomain(domain);
+    }
+  });
 }
 
 // ========== Tab Switching ==========
@@ -119,7 +133,8 @@ function switchTab(tabName) {
 async function loadAllData() {
   await Promise.all([
     loadDomains(),
-    loadSettings()
+    loadSettings(),
+    loadExcludedDomains()
   ]);
 }
 
@@ -154,6 +169,22 @@ async function loadSettings() {
   } catch (error) {
     console.error('Error loading settings:', error);
     showMessage('Failed to load settings', 'error');
+  }
+}
+
+async function loadExcludedDomains() {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: MESSAGE_TYPES.GET_EXCLUDED_DOMAINS
+    });
+
+    if (response.success) {
+      excludedDomains = response.excludedDomains;
+      renderExcludedDomains();
+    }
+  } catch (error) {
+    console.error('Error loading excluded domains:', error);
+    showMessage('Failed to load excluded domains', 'error');
   }
 }
 
@@ -285,6 +316,62 @@ async function handleEditDomain(e) {
   } catch (error) {
     console.error('Error updating domain:', error);
     showMessage('Failed to update domain', 'error');
+  }
+}
+
+// ========== Excluded Domains Management ==========
+
+async function handleAddExcludedDomain(e) {
+  e.preventDefault();
+
+  const domainName = document.getElementById('excluded-domain-name').value.trim().toLowerCase();
+
+  if (!isValidDomain(domainName)) {
+    showMessage('Please enter a valid domain name (e.g., example.com)', 'error');
+    return;
+  }
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: MESSAGE_TYPES.ADD_EXCLUDED_DOMAIN,
+      data: { domain: domainName }
+    });
+
+    if (response.success) {
+      showMessage(`Added ${domainName} to exclusion list!`, 'success');
+      addExcludedDomainForm.reset();
+      excludedDomains = response.excludedDomains;
+      renderExcludedDomains();
+    } else {
+      showMessage(response.error || 'Failed to add excluded domain', 'error');
+    }
+  } catch (error) {
+    console.error('Error adding excluded domain:', error);
+    showMessage('Failed to add excluded domain', 'error');
+  }
+}
+
+async function handleRemoveExcludedDomain(domain) {
+  if (!confirm(`Are you sure you want to remove ${domain} from the exclusion list? It will be tracked again.`)) {
+    return;
+  }
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: MESSAGE_TYPES.REMOVE_EXCLUDED_DOMAIN,
+      data: { domain }
+    });
+
+    if (response.success) {
+      showMessage(`Removed ${domain} from exclusion list`, 'success');
+      excludedDomains = response.excludedDomains;
+      renderExcludedDomains();
+    } else {
+      showMessage('Failed to remove excluded domain', 'error');
+    }
+  } catch (error) {
+    console.error('Error removing excluded domain:', error);
+    showMessage('Failed to remove excluded domain', 'error');
   }
 }
 
@@ -461,6 +548,23 @@ function renderStatistics() {
         </div>
       `;
     })
+    .join('');
+}
+
+function renderExcludedDomains() {
+  if (excludedDomains.length === 0) {
+    excludedDomainsList.innerHTML = '<p class="empty-state">No excluded domains yet.</p>';
+    return;
+  }
+
+  excludedDomainsList.innerHTML = excludedDomains
+    .sort()
+    .map(domain => `
+      <div class="excluded-domain-item">
+        <span class="excluded-domain-name">${domain}</span>
+        <button class="btn-small btn-danger remove-excluded-btn" data-domain="${domain}">Remove</button>
+      </div>
+    `)
     .join('');
 }
 

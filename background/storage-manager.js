@@ -304,6 +304,37 @@ class StorageManager {
     await chrome.storage.local.set({ [STORAGE_KEYS.ACTIVE_SESSION]: null });
   }
 
+  // ========== Excluded Domains ==========
+
+  async getExcludedDomains() {
+    const data = await chrome.storage.local.get(STORAGE_KEYS.EXCLUDED_DOMAINS);
+    return data[STORAGE_KEYS.EXCLUDED_DOMAINS] || [];
+  }
+
+  async addExcludedDomain(domain) {
+    const excludedDomains = await this.getExcludedDomains();
+
+    if (excludedDomains.includes(domain)) {
+      throw new Error('Domain already excluded');
+    }
+
+    excludedDomains.push(domain);
+    await chrome.storage.local.set({ [STORAGE_KEYS.EXCLUDED_DOMAINS]: excludedDomains });
+    return excludedDomains;
+  }
+
+  async removeExcludedDomain(domain) {
+    const excludedDomains = await this.getExcludedDomains();
+    const filtered = excludedDomains.filter(d => d !== domain);
+    await chrome.storage.local.set({ [STORAGE_KEYS.EXCLUDED_DOMAINS]: filtered });
+    return filtered;
+  }
+
+  async isExcluded(domain) {
+    const excludedDomains = await this.getExcludedDomains();
+    return excludedDomains.includes(domain);
+  }
+
   // ========== Data Export/Import ==========
 
   async exportData() {

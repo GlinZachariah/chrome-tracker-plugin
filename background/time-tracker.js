@@ -176,6 +176,13 @@ class TimeTracker {
       return;
     }
 
+    // Check if domain is excluded from tracking
+    const isExcluded = await storageManager.isExcluded(domain);
+    if (isExcluded) {
+      console.log('Domain is excluded from tracking:', domain);
+      return;
+    }
+
     console.log('Starting tracking for:', domain);
 
     // Create new session

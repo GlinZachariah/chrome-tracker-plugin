@@ -56,6 +56,25 @@
           <p class="empty-state">No domains tracked yet. Add one above!</p>
         </div>
       </div>
+
+      <div class="section">
+        <h2>Excluded Domains</h2>
+        <p class="section-description">Domains in this list will never be tracked for time usage.</p>
+        <form id="add-excluded-domain-form" class="add-domain-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="excluded-domain-name">Domain to Exclude:</label>
+              <input type="text" id="excluded-domain-name" placeholder="example.com" required>
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn-primary">Add to Exclusion List</button>
+            </div>
+          </div>
+        </form>
+        <div id="excluded-domains-list" class="excluded-domains-list">
+          <p class="empty-state">No excluded domains yet.</p>
+        </div>
+      </div>
     </div>
 
     <!-- Statistics Tab -->
