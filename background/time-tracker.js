@@ -11,6 +11,7 @@ class TimeTracker {
     this.activeSession = null;
     this.saveInterval = null;
     this.keepAliveInterval = null;
+    this.idleCheckInterval = null;
     this.settings = null;
   }
 
@@ -36,8 +37,13 @@ class TimeTracker {
     // Start tracking current active tab
     await this.startTrackingCurrentTab();
 
-    // Set up idle detection
-    chrome.idle.setDetectionInterval(Math.floor(this.settings.idleThreshold / 1000));
+    // Set up idle detection (minimum 15 seconds for better responsiveness)
+    const idleDetectionSeconds = Math.max(15, Math.floor(this.settings.idleThreshold / 1000));
+    chrome.idle.setDetectionInterval(idleDetectionSeconds);
+    console.log('[TimeTracker] Idle detection interval set to', idleDetectionSeconds, 'seconds');
+
+    // Start periodic idle state checking for better screen lock detection
+    this.startIdleStateChecking();
 
     console.log('TimeTracker initialized');
   }
@@ -72,6 +78,7 @@ class TimeTracker {
 
     // Idle state changes
     chrome.idle.onStateChanged.addListener(async (newState) => {
+      console.log('[TimeTracker] Idle state changed to:', newState, 'at', new Date().toLocaleTimeString());
       await this.handleIdleStateChanged(newState);
     });
   }
@@ -152,11 +159,16 @@ class TimeTracker {
    * Handle idle state change
    */
   async handleIdleStateChanged(newState) {
-    console.log('Idle state changed:', newState);
+    console.log('[TimeTracker] Handling idle state change:', newState);
 
     if (newState === 'idle' || newState === 'locked') {
+      console.log('[TimeTracker] Stopping tracking due to', newState, 'state');
+      if (this.activeSession) {
+        console.log('[TimeTracker] Active session found:', this.activeSession.domain, 'will be stopped');
+      }
       await this.stopTracking();
     } else if (newState === 'active') {
+      console.log('[TimeTracker] Resuming tracking - state is active');
       await this.startTrackingCurrentTab();
     }
   }
@@ -210,16 +222,21 @@ class TimeTracker {
    * Stop tracking current session
    */
   async stopTracking() {
-    if (!this.activeSession) return;
+    if (!this.activeSession) {
+      console.log('[TimeTracker] stopTracking called but no active session');
+      return;
+    }
 
-    console.log('Stopping tracking for:', this.activeSession.domain);
+    console.log('[TimeTracker] Stopping tracking for:', this.activeSession.domain);
 
     // Calculate elapsed time
     const elapsed = Date.now() - this.activeSession.startTime + this.activeSession.accumulatedTime;
+    console.log('[TimeTracker] Time elapsed:', Math.floor(elapsed / 1000), 'seconds');
 
     // Save time to storage
     if (elapsed > 0) {
       await this.saveTime(this.activeSession.domain, elapsed);
+      console.log('[TimeTracker] Time saved to storage');
     }
 
     // Clear badge
@@ -228,6 +245,7 @@ class TimeTracker {
     // Clear session
     this.activeSession = null;
     await storageManager.clearActiveSession();
+    console.log('[TimeTracker] Session cleared');
 
     // Stop periodic save
     this.stopPeriodicSave();
@@ -286,6 +304,41 @@ class TimeTracker {
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
       this.keepAliveInterval = null;
+    }
+  }
+
+  /**
+   * Start periodic idle state checking
+   * Checks every 5 seconds to catch screen locks faster
+   */
+  startIdleStateChecking() {
+    if (this.idleCheckInterval) {
+      clearInterval(this.idleCheckInterval);
+    }
+
+    this.idleCheckInterval = setInterval(async () => {
+      try {
+        // Query current idle state
+        const idleState = await chrome.idle.queryState(15); // Check if idle for 15 seconds
+
+        // If we're tracking and the state is idle or locked, stop tracking
+        if (this.activeSession && (idleState === 'idle' || idleState === 'locked')) {
+          console.log('[TimeTracker] Idle check detected state:', idleState, '- stopping tracking');
+          await this.handleIdleStateChanged(idleState);
+        }
+      } catch (error) {
+        console.error('[TimeTracker] Error checking idle state:', error);
+      }
+    }, 5000); // Check every 5 seconds
+  }
+
+  /**
+   * Stop idle state checking
+   */
+  stopIdleStateChecking() {
+    if (this.idleCheckInterval) {
+      clearInterval(this.idleCheckInterval);
+      this.idleCheckInterval = null;
     }
   }
 
