@@ -284,6 +284,38 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* Sub-tabs for domain categories */
+.sub-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0;
+}
+
+.sub-tab-button {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: -2px;
+}
+
+.sub-tab-button:hover {
+  color: #667eea;
+  background: #f8f9fa;
+}
+
+.sub-tab-button.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
 .form-hint {
   font-size: 13px;
   color: #666;

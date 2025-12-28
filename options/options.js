@@ -40,6 +40,7 @@ let currentDomains = {};
 let currentExtensions = {};
 let currentSettings = {};
 let excludedDomains = [];
+let activeDomainCategory = 'limited'; // 'limited' or 'unlimited'
 
 // ========== Initialization ==========
 
@@ -54,6 +55,17 @@ function setupEventListeners() {
   // Tab switching
   tabButtons.forEach(button => {
     button.addEventListener('click', () => switchTab(button.dataset.tab));
+  });
+
+  // Sub-tab switching for domain categories
+  const subTabButtons = document.querySelectorAll('.sub-tab-button');
+  subTabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      activeDomainCategory = button.dataset.category;
+      subTabButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      renderDomains();
+    });
   });
 
   // Add domain form
@@ -395,10 +407,12 @@ function renderDomains() {
 
   let html = '';
 
-  // Render limited domains section
-  if (limitedDomains.length > 0) {
-    html += '<h3 class="section-header">Domains with Limits</h3>';
-    html += limitedDomains.map(([domain, data]) => {
+  // Render based on active category
+  if (activeDomainCategory === 'limited') {
+    if (limitedDomains.length === 0) {
+      html = '<p class="empty-state">No domains with limits yet. Add one above!</p>';
+    } else {
+      html = limitedDomains.map(([domain, data]) => {
       const extensionData = currentExtensions[domain] || { weeklyRequests: [], dailyRequests: [], currentExtension: null };
       const dailyPercentage = data.dailyLimit ? calculatePercentage(data.dailyTime, data.dailyLimit) : 0;
       const weeklyPercentage = data.weeklyLimit ? calculatePercentage(data.weeklyTime, data.weeklyLimit) : 0;
@@ -459,45 +473,46 @@ function renderDomains() {
           </div>
         </div>
       `;
-    }).join('');
-  }
-
-  // Render unlimited domains section
-  if (unlimitedDomains.length > 0) {
-    html += '<h3 class="section-header">Domains without Limits</h3>';
-    html += unlimitedDomains.map(([domain, data]) => {
-      return `
-        <div class="domain-card unlimited">
-          <div class="domain-header">
-            <h3>${domain}</h3>
-            <span class="unlimited-badge">UNLIMITED</span>
-          </div>
-
-          <div class="domain-info">
-            <div class="info-row">
-              <span>Today:</span>
-              <strong>${formatTime(data.dailyTime)}</strong>
+      }).join('');
+    }
+  } else if (activeDomainCategory === 'unlimited') {
+    if (unlimitedDomains.length === 0) {
+      html = '<p class="empty-state">No unlimited domains yet. All tracked domains have limits!</p>';
+    } else {
+      html = unlimitedDomains.map(([domain, data]) => {
+        return `
+          <div class="domain-card unlimited">
+            <div class="domain-header">
+              <h3>${domain}</h3>
+              <span class="unlimited-badge">UNLIMITED</span>
             </div>
-            <div class="info-row">
-              <span>This week:</span>
-              <strong>${formatTime(data.weeklyTime)}</strong>
-            </div>
-            <div class="info-row">
-              <span>Total time:</span>
-              <strong>${formatTime(data.totalTime)}</strong>
-            </div>
-          </div>
 
-          <div class="domain-actions">
-            <button class="btn-small btn-secondary edit-domain-btn"
-              data-domain="${domain}"
-              data-daily-limit=""
-              data-weekly-limit="">Edit</button>
-            <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
+            <div class="domain-info">
+              <div class="info-row">
+                <span>Today:</span>
+                <strong>${formatTime(data.dailyTime)}</strong>
+              </div>
+              <div class="info-row">
+                <span>This week:</span>
+                <strong>${formatTime(data.weeklyTime)}</strong>
+              </div>
+              <div class="info-row">
+                <span>Total time:</span>
+                <strong>${formatTime(data.totalTime)}</strong>
+              </div>
+            </div>
+
+            <div class="domain-actions">
+              <button class="btn-small btn-secondary edit-domain-btn"
+                data-domain="${domain}"
+                data-daily-limit=""
+                data-weekly-limit="">Edit</button>
+              <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
+            </div>
           </div>
-        </div>
-      `;
-    }).join('');
+        `;
+      }).join('');
+    }
   }
 
   domainsList.innerHTML = html;
