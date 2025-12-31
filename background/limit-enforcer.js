@@ -197,6 +197,9 @@ class LimitEnforcer {
 
       // Show notification
       await this.showLimitExceededNotification(domain, result.domainData);
+    } else if (!result.blocked && result.domainData.isBlocked) {
+      // Domain is within limits but currently blocked - unblock it
+      await this.unblockDomain(domain);
     } else if (result.reason === 'approaching_limit') {
       // Show warning notification
       await this.showApproachingLimitNotification(domain, result.domainData, result.percentage);

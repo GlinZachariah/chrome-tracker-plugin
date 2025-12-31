@@ -290,7 +290,14 @@ async function handleUpdateDomain(data) {
   const { domain, updates } = data;
 
   const domainData = await storageManager.updateDomain(domain, updates);
-  return { success: true, domain: domainData };
+
+  // Re-check if domain should still be blocked after limit update
+  await limitEnforcer.checkAndEnforce(domain);
+
+  // Get updated domain data after enforcement check
+  const updatedDomainData = await storageManager.getDomain(domain);
+
+  return { success: true, domain: updatedDomainData };
 }
 
 /**

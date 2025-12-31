@@ -40,7 +40,9 @@ let currentDomains = {};
 let currentExtensions = {};
 let currentSettings = {};
 let excludedDomains = [];
-let activeDomainCategory = 'limited'; // 'limited' or 'unlimited'
+let currentPage = 1;
+let itemsPerPage = 20;
+let searchQuery = '';
 
 // ========== Initialization ==========
 
@@ -57,15 +59,41 @@ function setupEventListeners() {
     button.addEventListener('click', () => switchTab(button.dataset.tab));
   });
 
-  // Sub-tab switching for domain categories
-  const subTabButtons = document.querySelectorAll('.sub-tab-button');
-  subTabButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      activeDomainCategory = button.dataset.category;
-      subTabButtons.forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
+  // Domain filter dropdown
+  const domainFilter = document.getElementById('domain-filter');
+  domainFilter.addEventListener('change', () => {
+    currentPage = 1;
+    renderDomains();
+  });
+
+  // Domain search
+  const domainSearch = document.getElementById('domain-search');
+  domainSearch.addEventListener('input', (e) => {
+    searchQuery = e.target.value.toLowerCase();
+    currentPage = 1;
+    renderDomains();
+  });
+
+  // Pagination controls
+  document.getElementById('prev-page').addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
       renderDomains();
-    });
+    }
+  });
+
+  document.getElementById('next-page').addEventListener('click', () => {
+    const totalPages = getTotalPages();
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderDomains();
+    }
+  });
+
+  document.getElementById('per-page').addEventListener('change', (e) => {
+    itemsPerPage = parseInt(e.target.value);
+    currentPage = 1;
+    renderDomains();
   });
 
   // Add domain form
@@ -214,19 +242,13 @@ async function handleAddDomain(e) {
     return;
   }
 
-  // Parse limits (empty values become null for no limit)
-  const dailyLimitHours = dailyLimitInput ? parseFloat(dailyLimitInput) : null;
-  const weeklyLimitHours = weeklyLimitInput ? parseFloat(weeklyLimitInput) : null;
+  // Parse limits (empty or 0 values become null for no limit)
+  const dailyLimitHours = dailyLimitInput && parseFloat(dailyLimitInput) > 0 ? parseFloat(dailyLimitInput) : null;
+  const weeklyLimitHours = weeklyLimitInput && parseFloat(weeklyLimitInput) > 0 ? parseFloat(weeklyLimitInput) : null;
 
   // Validate: if both are set, weekly must be >= daily
   if (dailyLimitHours !== null && weeklyLimitHours !== null && weeklyLimitHours < dailyLimitHours) {
     showMessage('Weekly limit must be greater than or equal to daily limit', 'error');
-    return;
-  }
-
-  // Require at least one limit to be set
-  if (dailyLimitHours === null && weeklyLimitHours === null) {
-    showMessage('Please set at least one limit (daily or weekly)', 'error');
     return;
   }
 
@@ -293,19 +315,13 @@ async function handleEditDomain(e) {
   const dailyLimitInput = document.getElementById('edit-daily-limit').value;
   const weeklyLimitInput = document.getElementById('edit-weekly-limit').value;
 
-  // Parse limits (empty values become null for no limit)
-  const dailyLimitHours = dailyLimitInput ? parseFloat(dailyLimitInput) : null;
-  const weeklyLimitHours = weeklyLimitInput ? parseFloat(weeklyLimitInput) : null;
+  // Parse limits (empty or 0 values become null for no limit)
+  const dailyLimitHours = dailyLimitInput && parseFloat(dailyLimitInput) > 0 ? parseFloat(dailyLimitInput) : null;
+  const weeklyLimitHours = weeklyLimitInput && parseFloat(weeklyLimitInput) > 0 ? parseFloat(weeklyLimitInput) : null;
 
   // Validate: if both are set, weekly must be >= daily
   if (dailyLimitHours !== null && weeklyLimitHours !== null && weeklyLimitHours < dailyLimitHours) {
     showMessage('Weekly limit must be greater than or equal to daily limit', 'error');
-    return;
-  }
-
-  // Require at least one limit to be set
-  if (dailyLimitHours === null && weeklyLimitHours === null) {
-    showMessage('Please set at least one limit (daily or weekly)', 'error');
     return;
   }
 
@@ -350,6 +366,16 @@ async function handleAddExcludedDomain(e) {
     });
 
     if (response.success) {
+      // Check if domain is tracked and remove it
+      if (currentDomains[domainName]) {
+        await chrome.runtime.sendMessage({
+          action: MESSAGE_TYPES.DELETE_DOMAIN,
+          data: { domain: domainName }
+        });
+        // Reload domains to reflect the deletion
+        await loadDomains();
+      }
+
       showMessage(`Added ${domainName} to exclusion list!`, 'success');
       addExcludedDomainForm.reset();
       excludedDomains = response.excludedDomains;
@@ -389,133 +415,177 @@ async function handleRemoveExcludedDomain(domain) {
 
 // ========== Rendering ==========
 
+function getTotalPages() {
+  const domainsArray = Object.entries(currentDomains);
+  const filter = document.getElementById('domain-filter').value;
+
+  let filteredDomains = domainsArray;
+
+  // Apply limit filter
+  if (filter === 'limited') {
+    filteredDomains = filteredDomains.filter(([, data]) => data.dailyLimit || data.weeklyLimit);
+  } else if (filter === 'unlimited') {
+    filteredDomains = filteredDomains.filter(([, data]) => !data.dailyLimit && !data.weeklyLimit);
+  }
+
+  // Apply search filter
+  if (searchQuery) {
+    filteredDomains = filteredDomains.filter(([domain]) =>
+      domain.toLowerCase().includes(searchQuery)
+    );
+  }
+
+  return Math.ceil(filteredDomains.length / itemsPerPage) || 1;
+}
+
 function renderDomains() {
   const domainsArray = Object.entries(currentDomains);
 
   if (domainsArray.length === 0) {
     domainsList.innerHTML = '<p class="empty-state">No domains tracked yet. Add one above!</p>';
+    document.getElementById('pagination-controls').style.display = 'none';
     return;
   }
 
-  // Separate domains with limits from unlimited domains
-  const limitedDomains = domainsArray.filter(([, data]) => data.dailyLimit || data.weeklyLimit);
-  const unlimitedDomains = domainsArray.filter(([, data]) => !data.dailyLimit && !data.weeklyLimit);
+  // Filter domains based on selected filter
+  const filter = document.getElementById('domain-filter').value;
+  let filteredDomains = domainsArray;
 
-  // Sort by weekly time (descending)
-  limitedDomains.sort((a, b) => b[1].weeklyTime - a[1].weeklyTime);
-  unlimitedDomains.sort((a, b) => b[1].weeklyTime - a[1].weeklyTime);
-
-  let html = '';
-
-  // Render based on active category
-  if (activeDomainCategory === 'limited') {
-    if (limitedDomains.length === 0) {
-      html = '<p class="empty-state">No domains with limits yet. Add one above!</p>';
-    } else {
-      html = limitedDomains.map(([domain, data]) => {
-      const extensionData = currentExtensions[domain] || { weeklyRequests: [], dailyRequests: [], currentExtension: null };
-      const dailyPercentage = data.dailyLimit ? calculatePercentage(data.dailyTime, data.dailyLimit) : 0;
-      const weeklyPercentage = data.weeklyLimit ? calculatePercentage(data.weeklyTime, data.weeklyLimit) : 0;
-      const isBlocked = data.isBlocked;
-
-      return `
-        <div class="domain-card ${isBlocked ? 'blocked' : ''}">
-          <div class="domain-header">
-            <h3>${domain}</h3>
-            ${isBlocked ? '<span class="blocked-badge">BLOCKED</span>' : ''}
-          </div>
-
-          <div class="domain-info">
-            ${data.dailyLimit ? `
-              <div class="info-row">
-                <span>Today:</span>
-                <strong>${formatTime(data.dailyTime)} / ${formatTime(data.dailyLimit)}</strong>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${dailyPercentage}%"></div>
-              </div>
-              <div class="info-row">
-                <span>Daily usage:</span>
-                <strong>${dailyPercentage}%</strong>
-              </div>
-            ` : ''}
-
-            ${data.weeklyLimit ? `
-              <div class="info-row">
-                <span>This week:</span>
-                <strong>${formatTime(data.weeklyTime)} / ${formatTime(data.weeklyLimit)}</strong>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${weeklyPercentage}%"></div>
-              </div>
-              <div class="info-row">
-                <span>Weekly usage:</span>
-                <strong>${weeklyPercentage}%</strong>
-              </div>
-            ` : ''}
-
-            <div class="info-row">
-              <span>Total time:</span>
-              <strong>${formatTime(data.totalTime)}</strong>
-            </div>
-            <div class="info-row">
-              <span>Extensions used:</span>
-              <strong>${extensionData.dailyRequests.length} / ${currentSettings.maxDailyExtensions || 3} daily, ${extensionData.weeklyRequests.length} / ${currentSettings.maxWeeklyExtensions || 3} weekly</strong>
-            </div>
-          </div>
-
-          <div class="domain-actions">
-            <button class="btn-small btn-secondary edit-domain-btn"
-              data-domain="${domain}"
-              data-daily-limit="${data.dailyLimit ? (data.dailyLimit / (60 * 60 * 1000)).toFixed(1) : ''}"
-              data-weekly-limit="${data.weeklyLimit ? (data.weeklyLimit / (60 * 60 * 1000)).toFixed(1) : ''}">Edit</button>
-            <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
-          </div>
-        </div>
-      `;
-      }).join('');
-    }
-  } else if (activeDomainCategory === 'unlimited') {
-    if (unlimitedDomains.length === 0) {
-      html = '<p class="empty-state">No unlimited domains yet. All tracked domains have limits!</p>';
-    } else {
-      html = unlimitedDomains.map(([domain, data]) => {
-        return `
-          <div class="domain-card unlimited">
-            <div class="domain-header">
-              <h3>${domain}</h3>
-              <span class="unlimited-badge">UNLIMITED</span>
-            </div>
-
-            <div class="domain-info">
-              <div class="info-row">
-                <span>Today:</span>
-                <strong>${formatTime(data.dailyTime)}</strong>
-              </div>
-              <div class="info-row">
-                <span>This week:</span>
-                <strong>${formatTime(data.weeklyTime)}</strong>
-              </div>
-              <div class="info-row">
-                <span>Total time:</span>
-                <strong>${formatTime(data.totalTime)}</strong>
-              </div>
-            </div>
-
-            <div class="domain-actions">
-              <button class="btn-small btn-secondary edit-domain-btn"
-                data-domain="${domain}"
-                data-daily-limit=""
-                data-weekly-limit="">Edit</button>
-              <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
+  if (filter === 'limited') {
+    filteredDomains = domainsArray.filter(([, data]) => data.dailyLimit || data.weeklyLimit);
+  } else if (filter === 'unlimited') {
+    filteredDomains = domainsArray.filter(([, data]) => !data.dailyLimit && !data.weeklyLimit);
   }
 
+  // Apply search filter
+  if (searchQuery) {
+    filteredDomains = filteredDomains.filter(([domain]) =>
+      domain.toLowerCase().includes(searchQuery)
+    );
+  }
+
+  // Sort by weekly time (descending)
+  filteredDomains.sort((a, b) => b[1].weeklyTime - a[1].weeklyTime);
+
+  if (filteredDomains.length === 0) {
+    const emptyMessage = searchQuery
+      ? `No domains found matching "${searchQuery}"`
+      : filter === 'limited'
+      ? 'No domains with limits yet. Add one above!'
+      : filter === 'unlimited'
+      ? 'No unlimited domains yet. All tracked domains have limits!'
+      : 'No domains tracked yet. Add one above!';
+    domainsList.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+    document.getElementById('pagination-controls').style.display = 'none';
+    return;
+  }
+
+  // Pagination
+  const totalDomains = filteredDomains.length;
+  const totalPages = Math.ceil(totalDomains / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalDomains);
+  const paginatedDomains = filteredDomains.slice(startIndex, endIndex);
+
+  // Build table
+  let html = `
+    <table class="domains-table">
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th>Daily Usage</th>
+          <th>Daily Limit</th>
+          <th>Daily %</th>
+          <th>Weekly Usage</th>
+          <th>Weekly Limit</th>
+          <th>Weekly %</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  html += paginatedDomains.map(([domain, data]) => {
+    const dailyPercentage = data.dailyLimit ? calculatePercentage(data.dailyTime, data.dailyLimit) : 0;
+    const weeklyPercentage = data.weeklyLimit ? calculatePercentage(data.weeklyTime, data.weeklyLimit) : 0;
+    const isBlocked = data.isBlocked;
+
+    const statusBadge = isBlocked
+      ? '<span class="blocked-badge">BLOCKED</span>'
+      : (!data.dailyLimit && !data.weeklyLimit)
+      ? '<span class="unlimited-badge">UNLIMITED</span>'
+      : '<span class="active-badge">ACTIVE</span>';
+
+    return `
+      <tr class="${isBlocked ? 'blocked-row' : ''}">
+        <td class="domain-name">${domain}</td>
+        <td>${formatTime(data.dailyTime)}</td>
+        <td>${data.dailyLimit ? formatTime(data.dailyLimit) : '-'}</td>
+        <td class="${dailyPercentage >= 90 ? 'warning-text' : ''}">${data.dailyLimit ? dailyPercentage.toFixed(1) + '%' : '-'}</td>
+        <td>${formatTime(data.weeklyTime)}</td>
+        <td>${data.weeklyLimit ? formatTime(data.weeklyLimit) : '-'}</td>
+        <td class="${weeklyPercentage >= 90 ? 'warning-text' : ''}">${data.weeklyLimit ? weeklyPercentage.toFixed(1) + '%' : '-'}</td>
+        <td>${statusBadge}</td>
+        <td class="actions-cell">
+          <button class="btn-small btn-secondary edit-domain-btn"
+            data-domain="${domain}"
+            data-daily-limit="${data.dailyLimit ? (data.dailyLimit / (60 * 60 * 1000)).toFixed(2) : ''}"
+            data-weekly-limit="${data.weeklyLimit ? (data.weeklyLimit / (60 * 60 * 1000)).toFixed(2) : ''}">Edit</button>
+          <button class="btn-small btn-danger delete-domain-btn" data-domain="${domain}">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
   domainsList.innerHTML = html;
+
+  // Update pagination controls
+  document.getElementById('pagination-controls').style.display = 'flex';
+  document.getElementById('showing-start').textContent = startIndex + 1;
+  document.getElementById('showing-end').textContent = endIndex;
+  document.getElementById('total-domains').textContent = totalDomains;
+
+  // Enable/disable pagination buttons
+  document.getElementById('prev-page').disabled = currentPage === 1;
+  document.getElementById('next-page').disabled = currentPage === totalPages;
+
+  // Render page numbers
+  renderPageNumbers(totalPages);
+}
+
+function renderPageNumbers(totalPages) {
+  const pageNumbers = document.getElementById('page-numbers');
+  let html = '';
+
+  // Show exactly 5 consecutive page numbers
+  let startPage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+  let endPage = Math.min(totalPages, startPage + 4);
+
+  // Adjust startPage if we're near the end
+  if (endPage - startPage < 4) {
+    startPage = Math.max(1, endPage - 4);
+  }
+
+  // Render page numbers
+  for (let i = startPage; i <= endPage; i++) {
+    html += `<button class="page-number ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+  }
+
+  pageNumbers.innerHTML = html;
+
+  // Add click handlers to page numbers
+  document.querySelectorAll('.page-number').forEach(button => {
+    button.addEventListener('click', () => {
+      currentPage = parseInt(button.dataset.page);
+      renderDomains();
+    });
+  });
 }
 
 function renderStatistics() {

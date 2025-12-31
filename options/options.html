@@ -34,33 +34,63 @@
             </div>
             <div class="form-group">
               <label for="daily-limit">Daily Limit (hours):</label>
-              <input type="number" id="daily-limit" min="0" step="0.5" placeholder="Optional">
-              <small>Optional - leave empty for no daily limit</small>
+              <input type="number" id="daily-limit" min="0" step="0.05" placeholder="Optional">
+              <small>Optional - 0 or empty for no daily limit</small>
             </div>
             <div class="form-group">
               <label for="weekly-limit">Weekly Limit (hours):</label>
-              <input type="number" id="weekly-limit" min="0" step="0.5" placeholder="Optional">
-              <small>Optional - leave empty for no weekly limit</small>
+              <input type="number" id="weekly-limit" min="0" step="0.05" placeholder="Optional">
+              <small>Optional - 0 or empty for no weekly limit</small>
             </div>
             <div class="form-group">
+              <label>&nbsp;</label>
               <button type="submit" class="btn-primary">Add Domain</button>
             </div>
           </div>
-          <p class="form-hint">Note: If both limits are set, weekly limit must be greater than or equal to daily limit.</p>
+          <p class="form-hint">Note: Leave both empty for unlimited tracking. If both limits are set, weekly limit must be greater than or equal to daily limit.</p>
         </form>
       </div>
 
       <div class="section">
-        <h2>Tracked Domains</h2>
-
-        <!-- Sub-tabs for domain categories -->
-        <div class="sub-tabs">
-          <button class="sub-tab-button active" data-category="limited">With Limits</button>
-          <button class="sub-tab-button" data-category="unlimited">Without Limits</button>
+        <div class="section-header-row">
+          <h2>Tracked Domains</h2>
+          <div class="filter-controls">
+            <div class="search-box">
+              <input type="text" id="domain-search" placeholder="Search domains...">
+            </div>
+            <div class="filter-group">
+              <label for="domain-filter">Show:</label>
+              <select id="domain-filter">
+                <option value="all">All Domains</option>
+                <option value="limited">With Limits</option>
+                <option value="unlimited">Without Limits</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div id="domains-list" class="domains-list">
           <p class="empty-state">No domains tracked yet. Add one above!</p>
+        </div>
+
+        <div id="pagination-controls" class="pagination-controls" style="display: none;">
+          <div class="pagination-info">
+            Showing <span id="showing-start">0</span>-<span id="showing-end">0</span> of <span id="total-domains">0</span> domains
+          </div>
+          <div class="pagination-buttons">
+            <button id="prev-page" class="btn-secondary btn-small">← Previous</button>
+            <span id="page-numbers"></span>
+            <button id="next-page" class="btn-secondary btn-small">Next →</button>
+          </div>
+          <div class="per-page-group">
+            <label for="per-page">Per page:</label>
+            <select id="per-page">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -74,6 +104,7 @@
               <input type="text" id="excluded-domain-name" placeholder="example.com" required>
             </div>
             <div class="form-group">
+              <label>&nbsp;</label>
               <button type="submit" class="btn-primary">Add to Exclusion List</button>
             </div>
           </div>
@@ -200,13 +231,13 @@
         <input type="hidden" id="edit-domain-name">
         <div class="form-group">
           <label for="edit-daily-limit">Daily Limit (hours):</label>
-          <input type="number" id="edit-daily-limit" min="0" step="0.5" placeholder="No daily limit">
-          <small>Leave empty for no daily limit</small>
+          <input type="number" id="edit-daily-limit" min="0" step="0.05" placeholder="No daily limit">
+          <small>0 or empty for no daily limit</small>
         </div>
         <div class="form-group">
           <label for="edit-weekly-limit">Weekly Limit (hours):</label>
-          <input type="number" id="edit-weekly-limit" min="0" step="0.5" placeholder="No weekly limit">
-          <small>Leave empty for no weekly limit</small>
+          <input type="number" id="edit-weekly-limit" min="0" step="0.05" placeholder="No weekly limit">
+          <small>0 or empty for no weekly limit</small>
         </div>
         <p class="form-hint">Note: If both limits are set, weekly limit must be greater than or equal to daily limit.</p>
         <div class="modal-actions">

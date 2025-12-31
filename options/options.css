@@ -97,7 +97,7 @@ body {
 .add-domain-form .form-row {
   display: flex;
   gap: 15px;
-  align-items: flex-end;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
@@ -207,45 +207,184 @@ body {
   font-size: 12px;
 }
 
-/* Domains List */
-.domains-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.domain-card {
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s;
-}
-
-.domain-card:hover {
-  border-color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.domain-card.blocked {
-  border-color: #e74c3c;
-  background: #ffe5e5;
-}
-
-.domain-header {
+/* Section Header Row */
+.section-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
-.domain-header h3 {
-  font-size: 18px;
+.section-header-row h2 {
+  margin-bottom: 0;
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-box input {
+  padding: 8px 12px;
+  padding-left: 35px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  width: 250px;
+  transition: all 0.3s;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box::before {
+  content: '🔍';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  opacity: 0.5;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #555;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* Domains List Container */
+.domains-list {
+  min-height: 600px;
+}
+
+/* Domains Table */
+.domains-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.domains-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.domains-table th {
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.domains-table th:first-child {
+  padding-left: 20px;
+}
+
+.domains-table th:last-child {
+  padding-right: 20px;
+}
+
+.domains-table tbody tr {
+  border-bottom: 1px solid #e8eaed;
+  transition: background-color 0.2s;
+}
+
+.domains-table tbody tr:nth-child(even) {
+  background-color: #fafbfc;
+}
+
+.domains-table tbody tr:hover {
+  background-color: #f0f3ff;
+}
+
+.domains-table tbody tr.blocked-row {
+  background-color: #fff0f0;
+}
+
+.domains-table tbody tr.blocked-row:hover {
+  background-color: #ffe5e5;
+}
+
+.domains-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.domains-table td {
+  padding: 14px 12px;
+  vertical-align: middle;
+}
+
+.domains-table td:first-child {
+  padding-left: 20px;
+}
+
+.domains-table td:last-child {
+  padding-right: 20px;
+}
+
+.domain-name {
+  font-weight: 600;
   color: #2c3e50;
-  word-break: break-all;
+  word-break: break-word;
+  max-width: 250px;
 }
 
+.warning-text {
+  color: #e74c3c;
+  font-weight: 700;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* Status Badges */
 .blocked-badge {
   background: #e74c3c;
   color: white;
@@ -266,54 +405,111 @@ body {
   text-transform: uppercase;
 }
 
-.domain-card.unlimited {
-  border-color: #27ae60;
-  background: #e8f8f0;
-}
-
-.section-header {
-  font-size: 14px;
-  font-weight: 600;
-  color: #667eea;
-  margin: 5px 0 12px 0;
-  padding: 8px 12px;
-  background: #f0f3ff;
-  border-left: 4px solid #667eea;
+.active-badge {
+  background: #667eea;
+  color: white;
+  padding: 4px 8px;
   border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-/* Sub-tabs for domain categories */
-.sub-tabs {
+/* Pagination Controls */
+.pagination-controls {
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 0;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 15px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
-.sub-tab-button {
-  padding: 10px 20px;
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
+.pagination-info {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-buttons button {
+  min-width: 35px;
+  height: 35px;
+  padding: 6px 12px;
+}
+
+.pagination-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-number {
+  background: white;
+  border: 2px solid #e0e0e0;
+  color: #555;
+  padding: 6px 12px;
+  border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #666;
   cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: -2px;
+  transition: all 0.2s;
+  min-width: 35px;
+  height: 35px;
+  margin: 0 4px;
 }
 
-.sub-tab-button:hover {
+.page-number:hover {
+  border-color: #667eea;
   color: #667eea;
-  background: #f8f9fa;
+  background: #f0f3ff;
 }
 
-.sub-tab-button.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+.page-number.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+}
+
+.page-ellipsis {
+  color: #999;
+  padding: 0 8px;
+  font-weight: 600;
+}
+
+.per-page-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.per-page-group label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #555;
+}
+
+.per-page-group select {
+  padding: 6px 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.per-page-group select:focus {
+  outline: none;
+  border-color: #667eea;
 }
 
 .form-hint {
