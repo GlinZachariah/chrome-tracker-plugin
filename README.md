@@ -1,21 +1,48 @@
 # myTime - Smart Website Time Tracker
 
-A Chrome extension that helps you track time spent on websites and set weekly limits with extension requests.
+A Chrome extension that helps you track time spent on websites and set daily/weekly limits with smart blocking and extension requests.
 
 ## Features
 
+### Core Tracking
 - **Smart Time Tracking**: Automatically tracks active time spent on websites
   - Excludes Chrome internal pages (chrome://, chrome-extension://, etc.)
   - Filters out browser-specific pages (edge://, brave://, etc.)
   - Only tracks actual web content
-- **Weekly Limits**: Set weekly time limits for specific domains
-- **Smart Blocking**: Blocks websites when time limit is exceeded
-- **Extension Requests**: Request additional time with a configurable weekly limit
 - **Idle Detection**: Stops tracking when you're inactive (60 seconds default)
-- **Statistics Dashboard**: View detailed statistics of your web usage
 - **Visual Feedback**: Extension badge shows current site time with color coding
-- **Notifications**: Get notified when approaching limits or when limits are exceeded
-- **Weekly Reset**: Automatically resets limits every week (Monday by default)
+
+### Time Limits & Blocking
+- **Flexible Limits**: Set daily and/or weekly time limits for specific domains
+  - Fine-grained control: 0.1, 0.25, 0.5 hours and up
+  - Daily limits (resets every 24 hours)
+  - Weekly limits (resets every week)
+  - Or track without limits (unlimited tracking)
+- **Smart Blocking**: Automatically blocks websites when limits are exceeded
+- **Extension Requests**: Request additional time with configurable daily/weekly quotas
+- **Automatic Reset**: Daily and weekly limits reset automatically
+
+### Domain Management
+- **Professional Table View**: Manage domains in a clean, sortable table
+- **Pagination**: View 10, 20, 50, or 100 domains per page
+- **Search & Filter**:
+  - Search domains by name
+  - Filter by domains with limits or without limits
+- **Domain Exclusion List**: Permanently exclude domains from tracking
+  - Auto-removes excluded domains from tracking list
+- **Bulk Management**: Add, edit, or delete multiple domains easily
+
+### Statistics & Insights
+- **Real-time Dashboard**: View detailed statistics of your web usage
+- **Usage Percentages**: See daily and weekly usage at a glance
+- **Color-coded Warnings**: Red indicators when approaching or exceeding limits
+- **Weekly Overview**: Total time, domains tracked, most visited
+
+### Data & Privacy
+- **Export/Import**: Backup and restore all your data
+- **Manual Resets**: Trigger daily or weekly resets manually
+- **Local Storage**: All data stays on your device
+- **No Tracking**: No external servers, no data collection
 
 ## Installation
 
@@ -69,12 +96,16 @@ convert -background none icon.svg -resize 128x128 icon128.png
 2. **Add Domains to Track**:
    - Go to the "Domains" tab
    - Enter a domain name (e.g., `youtube.com`)
-   - Set a weekly limit in hours (e.g., `5` for 5 hours)
+   - Set limits (all optional):
+     - Daily Limit: e.g., `0.5` for 30 minutes, `2` for 2 hours
+     - Weekly Limit: e.g., `5` for 5 hours per week
+     - Leave empty or set to 0 for unlimited tracking
    - Click "Add Domain"
 
 3. **Configure Settings** (Optional):
    - Go to the "Settings" tab
    - Adjust global settings:
+     - Max daily extensions per domain (default: 3)
      - Max weekly extensions per domain (default: 3)
      - Default extension duration (default: 30 minutes)
      - Week start day (default: Monday)
@@ -105,9 +136,13 @@ convert -background none icon.svg -resize 128x128 icon128.png
 
 ### Managing Domains
 
-- **Edit a Domain**: Click "Edit" on any domain card to change the weekly limit
+- **Search**: Use the search box to filter domains by name
+- **Filter**: Use the dropdown to show only domains with/without limits
+- **Pagination**: Navigate through pages or change items per page (10/20/50/100)
+- **Edit a Domain**: Click "Edit" in the Actions column to modify limits
 - **Delete a Domain**: Click "Delete" to remove a domain and all its tracking data
-- **View Progress**: See progress bars showing usage percentage for each domain
+- **View Usage**: See daily/weekly usage percentages in the table (red = 90%+)
+- **Exclude Domains**: Add domains to the exclusion list to stop tracking permanently
 
 ## Features Explained
 
@@ -119,17 +154,20 @@ convert -background none icon.svg -resize 128x128 icon128.png
   - You're idle for more than 60 seconds (configurable)
 - Saves data every 10 seconds to prevent data loss
 
-### Weekly Limits
-- Set custom limits for each domain in hours
-- Limits reset automatically every week
-- Default reset day is Monday (configurable)
+### Daily and Weekly Limits
+- Set custom daily and/or weekly limits for each domain
+- Support fine-grained limits (0.1 hours = 6 minutes)
+- Daily limits reset every 24 hours
+- Weekly limits reset every week (default: Monday, configurable)
+- Can set only daily, only weekly, both, or neither (unlimited)
 - Manual reset available in Settings
 
 ### Extension Requests
 - Request additional time when blocked
-- Configurable weekly quota (default: 3 per domain)
+- Configurable daily and weekly quotas (default: 3 each per domain)
 - Choose duration from 15 minutes to 2 hours
 - Extension automatically expires and re-blocks site
+- Track usage across both daily and weekly quotas
 
 ### Data Management
 - **Export Data**: Download all your tracking data as JSON
@@ -254,6 +292,35 @@ For issues or questions:
 4. Reset all data and start fresh
 
 ## Version History
+
+### v1.3.0 (2025-12-31)
+- **Major UI Redesign**: Professional table view with pagination
+- **Search & Filter**: Real-time domain search and filtering
+- **Pagination**: View 10/20/50/100 domains per page
+- **Daily Limits**: Added support for daily time limits alongside weekly
+- **Fine-grained Limits**: Support for 0.1, 0.25, 0.5 hour increments
+- **Unlimited Tracking**: Allow domains without any limits
+- **Domain Exclusion**: Permanently exclude domains from tracking
+- **Auto-delete**: Excluded domains automatically removed from tracking
+- **Bug Fixes**:
+  - Fixed blocked badge persistence after limit increase
+  - Fixed form alignment issues
+  - Improved limit validation (0 = no limit)
+- **Testing**: Added 40+ comprehensive test cases
+- **Performance**: Removed debug logging, optimized rendering
+
+### v1.2.1 (2025-12-28)
+- Fixed screen lock detection with active polling
+- Improved idle detection accuracy
+
+### v1.2.0 (2025-12-28)
+- Redesigned domain sections as clickable sub-tabs
+- Added domain exclusion feature
+- Fixed domain sections UI
+
+### v1.1.0 (2025-12-28)
+- Added daily/weekly limits feature
+- Improved limit enforcement
 
 ### v1.0.0 (2025-12-27)
 - Initial release
